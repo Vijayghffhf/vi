@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CotoPay — Stop expense leak before it starts</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy: #1e2d5a;
+    --navy-mid: #2d3f78;
+    --green: #3aaa6b;
+    --green-light: #4ecb82;
+    --green-soft: #e8f8ef;
+    --slate: #4a5578;
+    --text-body: #5a6482;
+    --bg: #f5f8ff;
+    --white: #ffffff;
+    --card-shadow: 0 8px 32px rgba(30,45,90,0.10);
+    --card-shadow-hover: 0 16px 48px rgba(30,45,90,0.18);
+    --radius: 16px;
+  }
+
+  html { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--navy); scroll-behavior: smooth; }
+
+  /* NAV */
+  nav {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 20px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .nav-logo {
+    display: flex; align-items: center; gap: 10px;
+    font-family: 'Sora', sans-serif;
+    font-weight: 700; font-size: 22px; color: var(--navy);
+    text-decoration: none;
+  }
+  .nav-logo .logo-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--navy-mid), var(--navy));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .nav-logo .logo-icon svg { width: 20px; height: 20px; fill: white; }
+  .nav-logo span em { color: var(--green); font-style: normal; }
+
+  .nav-links { display: flex; gap: 32px; list-style: none; }
+  .nav-links a {
+    font-size: 15px; font-weight: 500; color: var(--slate);
+    text-decoration: none; transition: color .2s;
+  }
+  .nav-links a:hover { color: var(--navy); }
+
+  .nav-actions { display: flex; gap: 12px; align-items: center; }
+  .btn-ghost {
+    padding: 10px 22px; border-radius: 10px; border: 1.5px solid #d0d8f0;
+    font-size: 14px; font-weight: 600; color: var(--navy);
+    background: transparent; cursor: pointer; transition: border-color .2s, background .2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .btn-ghost:hover { background: var(--white); border-color: var(--navy-mid); }
+
+  .btn-primary {
+    padding: 10px 22px; border-radius: 10px; border: none;
+    font-size: 14px; font-weight: 700; color: white;
+    background: linear-gradient(135deg, var(--navy-mid), var(--navy));
+    cursor: pointer; transition: transform .2s, box-shadow .2s;
+    font-family: 'DM Sans', sans-serif; box-shadow: 0 4px 16px rgba(30,45,90,0.22);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(30,45,90,0.30); }
+
+  /* HERO */
+  .hero {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 24px 48px 80px;
+    position: relative;
+  }
+  .hero-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+    align-items: center;
+    min-height: 580px;
+  }
+
+  /* LEFT COPY */
+  .hero-copy { animation: fadeUp .7s ease both; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--green-soft); border: 1px solid #b8efd2;
+    color: var(--green); font-size: 13px; font-weight: 600;
+    padding: 6px 14px; border-radius: 100px;
+    margin-bottom: 28px;
+    animation: fadeUp .5s ease both;
+  }
+  .badge .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+
+  .hero-copy h1 {
+    font-family: 'Sora', sans-serif;
+    font-size: 52px;
+    font-weight: 800;
+    line-height: 1.12;
+    color: var(--navy);
+    margin-bottom: 22px;
+    letter-spacing: -1.5px;
+  }
+  .hero-copy h1 em {
+    font-style: normal;
+    background: linear-gradient(135deg, var(--green), #2e9a5c);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-copy p {
+    font-size: 17px; line-height: 1.65; color: var(--text-body);
+    max-width: 480px; margin-bottom: 36px; font-weight: 400;
+  }
+
+  .hero-ctas { display: flex; gap: 14px; align-items: center; margin-bottom: 48px; }
+  .btn-cta-primary {
+    padding: 15px 30px; border-radius: 12px; border: none;
+    font-size: 15px; font-weight: 700; color: white;
+    background: linear-gradient(135deg, var(--navy-mid), var(--navy));
+    cursor: pointer; transition: transform .2s, box-shadow .2s;
+    font-family: 'DM Sans', sans-serif;
+    box-shadow: 0 6px 20px rgba(30,45,90,0.28);
+  }
+  .btn-cta-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(30,45,90,0.34); }
+
+  .btn-cta-secondary {
+    padding: 15px 30px; border-radius: 12px; border: 1.5px solid #cdd5ea;
+    font-size: 15px; font-weight: 600; color: var(--navy);
+    background: transparent; cursor: pointer; transition: all .2s;
+    font-family: 'DM Sans', sans-serif;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .btn-cta-secondary:hover { background: white; border-color: var(--navy-mid); }
+  .btn-cta-secondary svg { width: 16px; height: 16px; }
+
+  /* CREDIBILITY */
+  .credibility { display: flex; flex-direction: column; gap: 14px; }
+  .cred-label { font-size: 12px; font-weight: 500; color: #9aa3bf; text-transform: uppercase; letter-spacing: .8px; }
+  .cred-logos { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+  .cred-logos .cred-item {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 14px; font-weight: 700; color: var(--slate);
+  }
+  .cred-item .cred-icon {
+    width: 26px; height: 26px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 900; color: white;
+  }
+  .npci { background: linear-gradient(135deg, #0066cc, #0044aa); }
+  .icici { background: linear-gradient(135deg, #d94040, #b52222); }
+  .press { background: linear-gradient(135deg, #444, #222); }
+  .cred-sep { width: 1px; height: 18px; background: #d8ddef; }
+
+  /* RIGHT VISUAL */
+  .hero-visual {
+    position: relative;
+    animation: fadeUp .7s .15s ease both;
+  }
+
+  .dashboard-card {
+    background: white;
+    border-radius: 20px;
+    box-shadow: var(--card-shadow);
+    padding: 22px;
+    position: relative;
+  }
+
+  .dash-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .dash-title { font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 700; color: var(--navy); }
+  .dash-live {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 600; color: var(--green);
+  }
+  .dash-live .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 1.5s infinite; }
+
+  .spend-section { margin-bottom: 16px; }
+  .spend-label { font-size: 11px; font-weight: 600; color: #9aa3bf; text-transform: uppercase; letter-spacing: .7px; margin-bottom: 10px; }
+
+  .spend-rule {
+    background: #f5f8ff; border-radius: 12px; padding: 14px 16px;
+    margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;
+    border: 1px solid #e4eaf8;
+  }
+  .rule-left { display: flex; align-items: center; gap: 10px; }
+  .rule-icon {
+    width: 34px; height: 34px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .rule-icon.employer { background: #e8ecff; }
+  .rule-icon.employee { background: #e8f8ef; }
+  .rule-text .name { font-size: 13px; font-weight: 700; color: var(--navy); }
+  .rule-text .sub { font-size: 11px; color: #9aa3bf; margin-top: 1px; }
+  .rule-right { display: flex; align-items: center; gap: 8px; }
+  .rule-amount { font-family: 'Sora', sans-serif; font-size: 14px; font-weight: 700; color: var(--navy); }
+  .toggle {
+    width: 34px; height: 20px; border-radius: 10px; background: var(--green);
+    position: relative; cursor: pointer;
+  }
+  .toggle::after {
+    content: ''; position: absolute; width: 14px; height: 14px;
+    border-radius: 50%; background: white; top: 3px; right: 3px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.15);
+  }
+
+  .tags { display: flex; gap: 5px; margin-top: 6px; flex-wrap: wrap; }
+  .tag {
+    font-size: 10px; font-weight: 600; padding: 3px 9px;
+    border-radius: 100px; background: #eef1fa; color: var(--slate);
+  }
+  .tag.green { background: #e8f8ef; color: var(--green); }
+
+  .txn-section { margin-bottom: 12px; }
+
+  .status-row {
+    display: flex; gap: 6px; margin-top: 10px;
+  }
+  .status-pill {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 700; padding: 5px 12px;
+    border-radius: 100px;
+  }
+  .status-pill.approved { background: #e8f8ef; color: var(--green); }
+  .status-pill.blocked { background: #ffeaea; color: #d94040; }
+  .status-pill svg { width: 10px; height: 10px; }
+
+  /* Floating mini cards */
+  .float-card {
+    position: absolute;
+    background: white;
+    border-radius: 14px;
+    box-shadow: 0 8px 28px rgba(30,45,90,0.14);
+    padding: 12px 16px;
+    font-size: 12px;
+    animation: float 4s ease-in-out infinite;
+  }
+  .float-card.employer-card {
+    top: -30px; left: -30px;
+    animation-delay: 0s;
+  }
+  .float-card.employee-card {
+    bottom: 30px; left: -40px;
+    animation-delay: 1.5s;
+  }
+  .float-title { font-weight: 700; color: var(--navy); font-size: 12px; margin-bottom: 4px; }
+  .float-sub { color: #9aa3bf; font-size: 11px; }
+
+  .merchants-row {
+    display: flex; gap: 6px; align-items: center; margin-top: 10px;
+  }
+  .merchant-dot {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 900; color: white;
+  }
+
+  /* BG decoration */
+  .bg-blob {
+    position: fixed; top: -100px; right: -120px;
+    width: 480px; height: 480px;
+    background: radial-gradient(circle, rgba(58,170,107,0.09) 0%, transparent 70%);
+    pointer-events: none; z-index: 0;
+    border-radius: 50%;
+  }
+  .bg-blob2 {
+    position: fixed; bottom: -80px; left: -100px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(30,45,90,0.06) 0%, transparent 70%);
+    pointer-events: none; z-index: 0; border-radius: 50%;
+  }
+
+  /* Animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(28px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .4; }
+  }
+
+  /* Section below */
+  .stats-bar {
+    max-width: 1280px; margin: 0 auto;
+    padding: 0 48px 60px;
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 2px;
+    background: linear-gradient(180deg, var(--bg) 0%, white 100%);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: var(--card-shadow);
+  }
+  .stat-item {
+    padding: 28px 32px;
+    background: white;
+    animation: fadeUp .6s ease both;
+  }
+  .stat-item:nth-child(1) { animation-delay: .1s; border-radius: 20px 0 0 20px; }
+  .stat-item:nth-child(2) { animation-delay: .2s; }
+  .stat-item:nth-child(3) { animation-delay: .3s; }
+  .stat-item:nth-child(4) { animation-delay: .4s; border-radius: 0 20px 20px 0; }
+  .stat-num {
+    font-family: 'Sora', sans-serif;
+    font-size: 32px; font-weight: 800; color: var(--navy);
+    letter-spacing: -1px;
+    margin-bottom: 4px;
+  }
+  .stat-num span { color: var(--green); }
+  .stat-desc { font-size: 13px; color: var(--text-body); line-height: 1.4; }
+
+  /* wrapper */
+  .page { position: relative; overflow-x: hidden; }
+
+  /* ── Mobile Adaptation ── */
+  @media (max-width: 768px) {
+
+    /* Nav */
+    nav {
+      padding: 16px 20px;
+    }
+    .nav-links { display: none; } /* collapse links into hamburger territory */
+    .nav-actions .btn-ghost { display: none; } /* keep only the CTA */
+    .btn-primary { padding: 10px 18px; font-size: 13px; }
+
+    /* Hero */
+    .hero {
+      padding: 24px 24px 48px;
+    }
+    .hero-inner {
+      grid-template-columns: 1fr; /* single column */
+      gap: 48px;
+    }
+
+    /* Visual moves to top on mobile */
+    .hero-visual {
+      order: -1;
+      margin-top: 32px;
+    }
+
+    /* Contain floating cards so they don't bleed off-screen */
+    .float-card.employer-card {
+      top: -20px; left: 0px;
+    }
+    .float-card.employee-card {
+      bottom: 16px; left: 0px;
+    }
+
+    /* Heading */
+    .hero-copy h1 {
+      font-size: 32px;
+      letter-spacing: -0.8px;
+    }
+
+    /* Body copy */
+    .hero-copy p {
+      font-size: 15px;
+    }
+
+    /* CTAs stack vertically, full width */
+    .hero-ctas {
+      flex-direction: column;
+    }
+    .btn-cta-primary,
+    .btn-cta-secondary {
+      width: 100%;
+      justify-content: center;
+    }
+
+    /* Badge */
+    .badge {
+      font-size: 11px;
+      padding: 5px 12px;
+    }
+
+    /* Stats bar: 2×2 grid on mobile */
+    .stats-bar {
+      grid-template-columns: repeat(2, 1fr);
+      padding: 0;
+    }
+    .stat-item:nth-child(1) { border-radius: 20px 0 0 0; }
+    .stat-item:nth-child(2) { border-radius: 0 20px 0 0; }
+    .stat-item:nth-child(3) { border-radius: 0 0 0 20px; }
+    .stat-item:nth-child(4) { border-radius: 0 0 20px 0; }
+    .stat-num { font-size: 24px; }
+    .stat-item { padding: 20px 18px; }
+
+    /* Credibility logos wrap */
+    .cred-logos { gap: 14px; }
+    .cred-sep { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="bg-blob"></div>
+  <div class="bg-blob2"></div>
+
+  <!-- NAV -->
+  <nav>
+    <a href="#" class="nav-logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 3.21 1.99 5.98 4.87 7.19L12 22l2.13-5.81C17.01 14.98 19 12.21 19 9c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+      </div>
+      <span>coto<em>pay</em></span>
+    </a>
+
+    <ul class="nav-links">
+      <li><a href="#">Products ▾</a></li>
+      <li><a href="#">Pricing</a></li>
+      <li><a href="#">Resources</a></li>
+      <li><a href="#">Combines</a></li>
+    </ul>
+
+    <div class="nav-actions">
+      <button class="btn-ghost">Log in</button>
+      <button class="btn-primary">Book a demo</button>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-inner">
+
+      <!-- LEFT -->
+      <div class="hero-copy">
+        <div class="badge">
+          <span class="dot"></span>
+          NPCI-backed · ICICI Bank partner
+        </div>
+
+        <h1>Stop expense leak<br /><em>before it starts.</em></h1>
+
+        <p>
+          Empower your finance team with granular spend control. Issue UPI vouchers tied to specific categories and merchants, automating compliance and eliminating out-of-policy spending.
+        </p>
+
+        <div class="hero-ctas">
+          <button class="btn-cta-primary">Book a demo</button>
+          <button class="btn-cta-secondary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/></svg>
+            See how it works
+          </button>
+        </div>
+
+        <div class="credibility">
+          <div class="cred-label">Trusted &amp; backed by</div>
+          <div class="cred-logos">
+            <div class="cred-item">
+              <div class="cred-icon npci">N</div>
+              NPCI-backed
+            </div>
+            <div class="cred-sep"></div>
+            <div class="cred-item">
+              <div class="cred-icon icici">🏦</div>
+              ICICI Bank partner
+            </div>
+            <div class="cred-sep"></div>
+            <div class="cred-item">
+              <div class="cred-icon press">P</div>
+              Press mention
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT VISUAL -->
+      <div class="hero-visual">
+        <!-- Floating employer card -->
+        <div class="float-card employer-card">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#4a5ec9,#2d3f78);display:flex;align-items:center;justify-content:center;font-size:12px;color:white;font-weight:800;">E</div>
+            <div>
+              <div class="float-title">Employer</div>
+              <div class="float-sub">Sets spend rules</div>
+            </div>
+          </div>
+          <div style="background:#f5f8ff;border-radius:8px;padding:8px 10px;font-size:11px;color:var(--slate);">
+            📋 Spend rule → <strong>₹10,000 cap</strong>
+          </div>
+        </div>
+
+        <!-- Main dashboard card -->
+        <div class="dashboard-card">
+          <div class="dash-header">
+            <div class="dash-title">📊 Dashboard — Spend Rules</div>
+            <div class="dash-live"><span class="live-dot"></span> Live</div>
+          </div>
+
+          <!-- Employer rule -->
+          <div class="spend-section">
+            <div class="spend-label">Spend Rules</div>
+
+            <div class="spend-rule">
+              <div class="rule-left">
+                <div class="rule-icon employer">👤</div>
+                <div class="rule-text">
+                  <div class="name">Employer</div>
+                  <div class="sub">Ubitar out of 21</div>
+                </div>
+              </div>
+              <div class="toggle"></div>
+            </div>
+
+            <div class="spend-rule">
+              <div class="rule-left">
+                <div class="rule-icon employee">👥</div>
+                <div class="rule-text">
+                  <div class="name">Employee</div>
+                  <div class="sub">Uhlar out of 21</div>
+                </div>
+              </div>
+              <div class="rule-right">
+                <div class="rule-amount">₹10,000</div>
+              </div>
+            </div>
+            <div class="tags">
+              <span class="tag">Category</span>
+              <span class="tag">Tags</span>
+              <span class="tag">Sales-rule</span>
+            </div>
+          </div>
+
+          <!-- Transactions -->
+          <div class="txn-section">
+            <div class="spend-label">Transactions</div>
+            <div class="spend-rule" style="justify-content:space-between;">
+              <div class="rule-left">
+                <div>
+                  <div class="name" style="font-size:13px;font-weight:700;color:var(--navy);">Transaction</div>
+                  <div class="tags" style="margin-top:4px;">
+                    <span class="tag">Category</span>
+                    <span class="tag">Tags</span>
+                    <span class="tag">Merchant</span>
+                  </div>
+                </div>
+              </div>
+              <div class="rule-amount">₹2,500</div>
+            </div>
+          </div>
+
+          <!-- Transaction states -->
+          <div>
+            <div class="spend-label">Transaction States</div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <span class="tag">Category</span>
+              <span class="tag">Merchant Rules</span>
+            </div>
+            <div class="status-row">
+              <div class="status-pill approved">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                Approved
+              </div>
+              <div class="status-pill blocked">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                Block
+              </div>
+            </div>
+          </div>
+
+          <!-- Popular merchants -->
+          <div style="margin-top:14px;">
+            <div class="spend-label">Popular Merchants</div>
+            <div class="merchants-row">
+              <div class="merchant-dot" style="background:#e94f37;">S</div>
+              <div class="merchant-dot" style="background:#f4a91b;">H</div>
+              <div class="merchant-dot" style="background:#ef5350;">M</div>
+              <div class="merchant-dot" style="background:#43b97f;">₹</div>
+              <div class="merchant-dot" style="background:#1a1a1a;">Z</div>
+              <span style="font-size:11px;color:#9aa3bf;margin-left:4px;">+14 more</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Floating employee card -->
+        <div class="float-card employee-card">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#3aaa6b,#2e9a5c);display:flex;align-items:center;justify-content:center;font-size:12px;color:white;font-weight:800;">✓</div>
+            <div>
+              <div class="float-title">Employee</div>
+              <div class="float-sub">Receives restricted voucher</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS BAR -->
+  <div style="max-width:1280px;margin:0 auto;padding:0 48px 60px;">
+    <div class="stats-bar">
+      <div class="stat-item">
+        <div class="stat-num">₹<span>500</span>Cr+</div>
+        <div class="stat-desc">Spend managed<br/>through the platform</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num"><span>98</span>%</div>
+        <div class="stat-desc">Compliance rate<br/>achieved by teams</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num"><span>0</span> leaks</div>
+        <div class="stat-desc">Out-of-policy spend<br/>with smart rules</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num"><span>500</span>+</div>
+        <div class="stat-desc">Businesses trust<br/>CotoPay today</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
